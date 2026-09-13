@@ -1,14 +1,17 @@
-"""FastAPI website for a local digital services studio in Valdemoro."""
+"""SEO Valdemoro website application."""
 
+from __future__ import annotations
+
+import asyncio
 import os
-import smtplib
-import threading
-import time
-import urllib.request
-from email.message import EmailMessage
+from contextlib import asynccontextmanager, suppress
+from dataclasses import dataclass
 from pathlib import Path
+from typing import Any
+from urllib.parse import quote
+from xml.sax.saxutils import escape
 
-from fastapi import FastAPI, Form, Request
+from fastapi import FastAPI, Request
 from fastapi.responses import PlainTextResponse, Response
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
@@ -18,18 +21,35 @@ BASE_DIR = Path(__file__).resolve().parent
 TEMPLATES_DIR = BASE_DIR / "templates"
 STATIC_DIR = BASE_DIR / "static"
 
-app = FastAPI(title="SEO Valdemoro | SEO local y desarrollo web", version="1.0.0")
-app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
+
+def _safe_int(value: str, fallback: int) -> int:
+    try:
+        return int(value)
+    except ValueError:
+        return fallback
+
+
+@dataclass(frozen=True)
+class Settings:
+    """Runtime settings that may be overridden by Render environment variables."""
+
+    site_url: str = os.getenv("SITE_URL", "http://localhost:8000").rstrip("/")
+    site_name: str = os.getenv("SITE_NAME", "SEO Valdemoro")
+    phone: str = "615 09 68 57"
+    phone_e164: str = "+34615096857"
+    whatsapp_message: str = "Hola SEO Valdemoro, quiero mejorar la presencia digital de mi negocio."
+    render_external_url: str | None = os.getenv("RENDER_EXTERNAL_URL")
+    keepalive_interval: int = max(60, _safe_int(os.getenv("KEEPALIVE_INTERVAL", "270"), 270))
+
+    @property
+    def whatsapp_url(self) -> str:
+        return f"https://wa.me/{self.phone_e164.removeprefix('+')}?text={quote(self.whatsapp_message)}"
+
+
+settings = Settings()
 templates = Jinja2Templates(directory=TEMPLATES_DIR)
 
-SITE_URL = os.environ.get("SITE_URL", "http://localhost:8000").rstrip("/")
-SITE_NAME = os.environ.get("SITE_NAME", "SEO Valdemoro")
-CONTACT_EMAIL = "angel.maturana@gmail.com"
-CONTACT_PHONE = "615 09 68 57"
-CONTACT_PHONE_E164 = "+34615096857"
-WHATSAPP_URL = "https://wa.me/34615096857?text=Hola%20SEO%20Valdemoro%2C%20quiero%20mejorar%20la%20presencia%20digital%20de%20mi%20negocio."
-
-SERVICES = {
+SERVICES: dict[str, dict[str, Any]] = {
     "desarrollo-web-valdemoro": {
         "title": "Desarrollo web móvil en Valdemoro",
         "short_title": "Web móvil",
@@ -39,7 +59,7 @@ SERVICES = {
         "points": [
             "Arquitectura mobile-first y navegación sin fricción.",
             "Páginas preparadas para crecer con nuevos servicios.",
-            "Contenido orientado a llamadas, formularios y visitas.",
+            "Contenido orientado a llamadas, mapas y conversaciones.",
         ],
     },
     "seo-local-google-maps-valdemoro": {
@@ -80,225 +100,152 @@ SERVICES = {
     },
 }
 
-NAV_ITEMS = [
+NAV_ITEMS = (
     ("Inicio", "/"),
     ("Servicios", "/#servicios"),
     ("Casos", "/casos-exito-valdemoro"),
     ("Nosotros", "/sobre-nosotros"),
     ("Blog", "/blog"),
-]
+)
+PUBLIC_PATHS = (
+    "/",
+    "/casos-exito-valdemoro",
+    "/sobre-nosotros",
+    "/blog",
+    *[f"/servicios/{slug}" for slug in SERVICES],
+)
 
 
 def page_context(request: Request, title: str, description: str, **values: object) -> dict[str, object]:
-    """Build the shared context used by every page template."""
-    path = request.url.path
+    """Return the shared template context for a public page."""
     return {
-        "site_name": SITE_NAME,
-        "site_url": SITE_URL,
-        "canonical_url": f"{SITE_URL}{path}",
+        "request": request,
+        "site_name": settings.site_name,
+        "site_url": settings.site_url,
+        "canonical_url": f"{settings.site_url}{request.url.path}",
         "page_title": title,
         "page_description": description,
         "nav_items": NAV_ITEMS,
         "services": SERVICES,
-        "contact_email": CONTACT_EMAIL,
-        "contact_phone": CONTACT_PHONE,
-        "contact_phone_e164": CONTACT_PHONE_E164,
-        "whatsapp_url": WHATSAPP_URL,
+        "contact_phone": settings.phone,
+        "contact_phone_e164": settings.phone_e164,
+        "whatsapp_url": settings.whatsapp_url,
         **values,
     }
 
 
-def send_audit_email(business_name: str, email: str, phone: str) -> bool:
-    """Send an audit notification when SMTP credentials are configured."""
-    smtp_host = os.environ.get("SMTP_HOST")
-    smtp_user = os.environ.get("SMTP_USER")
-    smtp_password = os.environ.get("SMTP_PASSWORD")
-    if not all((smtp_host, smtp_user, smtp_password)):
-        return False
-
-    message = EmailMessage()
-    message["Subject"] = f"Nueva solicitud de auditoría: {business_name}"
-    message["From"] = os.environ.get("SMTP_FROM", smtp_user)
-    message["To"] = CONTACT_EMAIL
-    message.set_content(
-        "Nueva solicitud de auditoría SEO Valdemoro\n\n"
-        f"Negocio: {business_name}\nEmail: {email}\nTeléfono/WhatsApp: {phone or 'No indicado'}\n"
-    )
-    port = int(os.environ.get("SMTP_PORT", "587"))
-    with smtplib.SMTP(smtp_host, port, timeout=15) as smtp:
-        smtp.starttls()
-        smtp.login(smtp_user, smtp_password)
-        smtp.send_message(message)
-    return True
-
-
-def keep_alive_ping() -> None:
-    """Ping the public service periodically when deployed on Render."""
-    time.sleep(30)
-
-    external_url = os.environ.get("RENDER_EXTERNAL_URL")
-    if not external_url:
-        print("[Keep-Alive] RENDER_EXTERNAL_URL not set - skipping keep-alive (local mode)")
+async def keep_alive_loop() -> None:
+    """Ping the public Render service until application shutdown."""
+    if not settings.render_external_url:
         return
 
-    ping_url = f"{external_url.rstrip('/')}/keepalive"
-    try:
-        interval = max(60, int(os.environ.get("KEEPALIVE_INTERVAL", "270")))
-    except ValueError:
-        interval = 270
-    print(f"[Keep-Alive] Engine started - pinging {ping_url} every {interval}s")
+    ping_url = f"{settings.render_external_url.rstrip('/')}/keepalive"
+    import urllib.request
 
+    await asyncio.sleep(30)
     while True:
         try:
-            request = urllib.request.Request(ping_url, method="GET")
-            with urllib.request.urlopen(request, timeout=10) as response:
-                if response.status == 200:
-                    print(f"[Keep-Alive] Pinged {ping_url} -> {response.status}")
+            def ping() -> int:
+                request = urllib.request.Request(ping_url, method="GET")
+                with urllib.request.urlopen(request, timeout=10) as response:
+                    return response.status
+
+            status = await asyncio.to_thread(ping)
+            if status != 200:
+                print(f"[Keep-Alive] Unexpected response: {status}")
         except Exception as exc:
             print(f"[Keep-Alive] Ping failed: {exc}")
-
-        time.sleep(interval)
-
-
-threading.Thread(target=keep_alive_ping, daemon=True).start()
+        await asyncio.sleep(settings.keepalive_interval)
 
 
-@app.get("/health")
-async def health_check() -> dict[str, str]:
-    """Return a simple health status for monitoring services."""
-    return {
-        "status": "healthy",
-        "message": "Web server is running",
-    }
+@asynccontextmanager
+async def lifespan(_: FastAPI):
+    keepalive_task = None
+    if settings.render_external_url:
+        keepalive_task = asyncio.create_task(keep_alive_loop())
+    yield
+    if keepalive_task:
+        keepalive_task.cancel()
+        with suppress(asyncio.CancelledError):
+            await keepalive_task
 
 
-@app.get("/")
+app = FastAPI(
+    title="SEO Valdemoro | SEO local y desarrollo web",
+    description="Desarrollo web, SEO local y posicionamiento en IA para negocios de Valdemoro.",
+    version="2.0.0",
+    lifespan=lifespan,
+)
+app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
+
+
+@app.get("/", name="home")
 async def home_page(request: Request):
-    """Render the conversion-focused home page."""
-    context = page_context(
-        request,
-        "SEO local y desarrollo web en Valdemoro | SEO Valdemoro",
-        "Diseño web, SEO local y posicionamiento en IA para comercios y PyMEs de Valdemoro.",
-        page="home",
+    return templates.TemplateResponse(
+        request=request,
+        name="index.html",
+        context=page_context(
+            request,
+            "SEO local y desarrollo web en Valdemoro | SEO Valdemoro",
+            "SEO local, desarrollo web y posicionamiento en IA para comercios y PyMEs de Valdemoro.",
+            page="home",
+        ),
     )
-    return templates.TemplateResponse(request=request, name="index.html", context=context)
 
 
-@app.get("/servicios/{service_slug}")
+@app.get("/servicios/{service_slug}", name="service")
 async def service_page(request: Request, service_slug: str):
-    """Render one of the focused service pages."""
     service = SERVICES.get(service_slug)
     if service is None:
         return Response("Not found", status_code=404)
-    context = page_context(
-        request,
-        f"{service['title']} | {SITE_NAME}",
-        service["description"],
-        page="service",
-        service=service,
+    return templates.TemplateResponse(
+        request=request,
+        name="service.html",
+        context=page_context(request, f"{service['title']} | {settings.site_name}", service["description"], page="service", service=service),
     )
-    return templates.TemplateResponse(request=request, name="service.html", context=context)
 
 
-@app.get("/casos-exito-valdemoro")
+@app.get("/casos-exito-valdemoro", name="cases")
 async def cases_page(request: Request):
-    context = page_context(
-        request,
-        f"Casos de éxito de SEO local en Valdemoro | {SITE_NAME}",
-        "Un marco transparente para medir visibilidad local, contactos y oportunidades de mejora.",
-        page="cases",
-    )
-    return templates.TemplateResponse(request=request, name="cases.html", context=context)
+    return templates.TemplateResponse(request=request, name="cases.html", context=page_context(request, f"Casos de éxito SEO local en Valdemoro | {settings.site_name}", "Cómo medimos visibilidad local, contactos y oportunidades de mejora.", page="cases"))
 
 
-@app.get("/sobre-nosotros")
+@app.get("/sobre-nosotros", name="about")
 async def about_page(request: Request):
-    context = page_context(
-        request,
-        f"Sobre {SITE_NAME} | Estrategia digital en Valdemoro",
-        "Conoce nuestro enfoque de trabajo para construir presencia digital local con claridad y criterio.",
-        page="about",
-    )
-    return templates.TemplateResponse(request=request, name="about.html", context=context)
+    return templates.TemplateResponse(request=request, name="about.html", context=page_context(request, f"Sobre {settings.site_name} | Estrategia digital en Valdemoro", "Conoce el enfoque de SEO Valdemoro para construir presencia digital local.", page="about"))
 
 
-@app.get("/auditoria-gratuita-valdemoro")
-async def audit_page(request: Request):
-    context = page_context(
-        request,
-        f"Auditoría digital gratuita en Valdemoro | {SITE_NAME}",
-        "Solicita una revisión inicial de tu web, presencia local y oportunidades de captación.",
-        page="audit",
-    )
-    return templates.TemplateResponse(request=request, name="audit.html", context=context)
-
-
-@app.post("/auditoria-gratuita-valdemoro")
-def submit_audit(
-    request: Request,
-    business_name: str = Form(...),
-    email: str = Form(...),
-    phone: str = Form(""),
-):
-    """Send the audit request when configured and expose WhatsApp as fallback."""
-    safe_business_name = business_name.strip()[:120]
-    safe_email = email.strip()[:160]
-    safe_phone = phone.strip()[:40]
-    email_sent = False
-    email_error = False
-    try:
-        email_sent = send_audit_email(safe_business_name, safe_email, safe_phone)
-    except (OSError, smtplib.SMTPException, ValueError):
-        email_error = True
-    context = page_context(
-        request,
-        f"Solicitud recibida | {SITE_NAME}",
-        "Tu solicitud de auditoría digital ha sido recibida.",
-        page="audit",
-        submitted=True,
-        submitted_name=safe_business_name,
-        submitted_email=safe_email,
-        submitted_phone=safe_phone,
-        email_sent=email_sent,
-        email_error=email_error,
-    )
-    return templates.TemplateResponse(request=request, name="audit.html", context=context)
-
-
-@app.get("/blog")
+@app.get("/blog", name="blog")
 async def blog_page(request: Request):
-    context = page_context(
-        request,
-        f"Blog de SEO local y GEO en Valdemoro | {SITE_NAME}",
-        "Guías prácticas para mejorar la presencia digital de negocios locales.",
-        page="blog",
+    return templates.TemplateResponse(request=request, name="blog.html", context=page_context(request, f"Blog de SEO local y GEO en Valdemoro | {settings.site_name}", "Guías prácticas para mejorar la presencia digital de negocios locales.", page="blog"))
+
+
+@app.get("/health", response_model=dict[str, str], name="health")
+async def health_check() -> dict[str, str]:
+    return {"status": "healthy", "message": "Web server is running"}
+
+
+@app.get("/robots.txt", response_class=PlainTextResponse, name="robots")
+async def robots() -> str:
+    return f"User-agent: *\nAllow: /\nSitemap: {settings.site_url}/sitemap.xml\n"
+
+
+@app.get("/sitemap.xml", name="sitemap")
+async def sitemap() -> Response:
+    urls = "".join(
+        f"<url><loc>{escape(settings.site_url + path)}</loc><changefreq>monthly</changefreq></url>"
+        for path in PUBLIC_PATHS
     )
-    return templates.TemplateResponse(request=request, name="blog.html", context=context)
-
-
-@app.get("/robots.txt")
-async def robots(request: Request):
-    content = f"User-agent: *\nAllow: /\nSitemap: {SITE_URL}/sitemap.xml\n"
-    return PlainTextResponse(content)
-
-
-@app.get("/sitemap.xml")
-async def sitemap(request: Request):
-    paths = ["/", "/casos-exito-valdemoro", "/sobre-nosotros", "/auditoria-gratuita-valdemoro", "/blog"]
-    paths.extend(f"/servicios/{slug}" for slug in SERVICES)
-    urls = "".join(f"<url><loc>{SITE_URL}{path}</loc><changefreq>monthly</changefreq></url>" for path in paths)
     content = f'<?xml version="1.0" encoding="UTF-8"?><urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">{urls}</urlset>'
     return Response(content, media_type="application/xml")
 
 
-@app.get("/keepalive")
-async def keepalive() -> PlainTextResponse:
-    """Endpoint used by the internal keep-alive request and monitors."""
-    return PlainTextResponse("OK", status_code=200)
+@app.get("/keepalive", response_class=PlainTextResponse, name="keepalive")
+async def keepalive() -> str:
+    return "OK"
 
 
 if __name__ == "__main__":
     import uvicorn
 
-    print("Starting web server on http://0.0.0.0:8000")
-    uvicorn.run(app, host="0.0.0.0", port=8000)
+    uvicorn.run(app, host="0.0.0.0", port=int(os.getenv("PORT", "8000")))

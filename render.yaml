@@ -1,0 +1,15 @@
+services:
+  - type: web
+    name: seo-valdemoro
+    runtime: python
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn main:app --host 0.0.0.0 --port $PORT
+    envVars:
+      - key: SITE_URL
+        sync: false
+      - key: SITE_NAME
+        value: SEO Valdemoro
+      - key: RENDER_EXTERNAL_URL
+        sync: false
+      - key: KEEPALIVE_INTERVAL
+        value: "270"

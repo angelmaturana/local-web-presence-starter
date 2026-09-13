@@ -1,6 +1,6 @@
-# Local Web Presence Starter
+# SEO Valdemoro
 
-A FastAPI website for a local digital services studio serving businesses in Valdemoro, Madrid.
+A maintainable FastAPI website for SEO Valdemoro, a local digital services studio serving businesses in Valdemoro, Madrid.
 
 ## Features
 
@@ -9,15 +9,16 @@ A FastAPI website for a local digital services studio serving businesses in Vald
 - Static CSS served from `/static`
 - Health check endpoint at `/health`
 - Keep-alive endpoint at `/keepalive`
-- Audit request form at `/auditoria-gratuita-valdemoro`
 - `robots.txt` and `sitemap.xml` endpoints
 - Phone and WhatsApp contact paths
-- SMTP-backed audit notifications
 - Optional Render keep-alive support
+- Automated smoke tests for public routes and SEO endpoints
+
+The site is intentionally contact-first: visitors can call `615 09 68 57` or open a prefilled WhatsApp conversation. There is no form, email collection, or SMTP integration.
 
 ## Requirements
 
-- Python 3.9 or newer
+- Python 3.10 or newer
 
 ## Local setup
 
@@ -37,6 +38,13 @@ python3 main.py
 
 Open [http://localhost:8000](http://localhost:8000) in your browser.
 
+Run the test suite:
+
+```bash
+pip install -r requirements-dev.txt
+pytest -q
+```
+
 ## Endpoints
 
 | Method | Path | Description |
@@ -45,8 +53,6 @@ Open [http://localhost:8000](http://localhost:8000) in your browser.
 | `GET` | `/servicios/{service_slug}` | Renders a focused service page |
 | `GET` | `/casos-exito-valdemoro` | Displays the measurement framework for case studies |
 | `GET` | `/sobre-nosotros` | Displays the working approach and local coverage |
-| `GET` | `/auditoria-gratuita-valdemoro` | Displays the audit request form |
-| `POST` | `/auditoria-gratuita-valdemoro` | Acknowledges an audit form submission |
 | `GET` | `/blog` | Displays the resource archive |
 | `GET` | `/health` | Returns the application health status |
 | `GET` | `/keepalive` | Returns `OK` for monitoring and keep-alive requests |
@@ -58,18 +64,24 @@ Open [http://localhost:8000](http://localhost:8000) in your browser.
 ```text
 .
 ├── main.py
+├── pyproject.toml
+├── render.yaml
 ├── requirements.txt
+├── requirements-dev.txt
 ├── static/
 │   └── site.css
 └── templates/
     ├── about.html
-    ├── audit.html
     ├── base.html
     ├── blog.html
     ├── cases.html
     ├── index.html
     └── service.html
+└── tests/
+    └── test_app.py
 ```
+
+The backend keeps configuration, content, route registration, metadata, sitemap generation, and the Render keep-alive lifecycle in one small module with explicit boundaries. Templates share `templates/base.html`; service pages are generated from the service catalog instead of duplicating route logic.
 
 ## Render keep-alive
 
@@ -77,24 +89,14 @@ When deployed on Render, set `RENDER_EXTERNAL_URL` to the public service URL. Th
 
 The interval can be customized with `KEEPALIVE_INTERVAL` in seconds. It defaults to `270` seconds.
 
+`render.yaml` contains the recommended Render service and start command. Set `SITE_URL` to the final public HTTPS URL so canonical tags, `robots.txt`, the sitemap, and structured data point to the correct origin.
+
 ## Customization
 
 Update the copy and metadata in `templates/index.html`, and adjust the visual design in `static/site.css` to match the business or brand.
 
-The default site identity is `SEO Valdemoro`. It and the public URL can be configured with `SITE_NAME` and `SITE_URL`. Replace the placeholder NAP information in `templates/base.html` and connect the audit form to an email or CRM service before using it in production.
+The default site identity is `SEO Valdemoro`. It and the public URL can be configured with `SITE_NAME` and `SITE_URL`. Replace the placeholder NAP information in `templates/base.html` before using the site in production.
 
-## Contact and email delivery
+## Contact
 
-The public contact phone is `615 09 68 57`, and WhatsApp uses the international number `+34 615 09 68 57`. Audit requests are delivered to `angel.maturana@gmail.com` when SMTP is configured. WhatsApp links include a short prefilled message to reduce friction.
-
-Set these Render environment variables for email delivery:
-
-```env
-SMTP_HOST=smtp.gmail.com
-SMTP_PORT=587
-SMTP_USER=your-sending-gmail-address@gmail.com
-SMTP_PASSWORD=your-gmail-app-password
-SMTP_FROM=your-sending-gmail-address@gmail.com
-```
-
-For Gmail, use an App Password on an account with two-step verification enabled. Do not commit the password. If SMTP is not configured or fails, the form clearly directs the visitor to WhatsApp instead of reporting a false success.
+The public contact phone is `615 09 68 57`, and WhatsApp uses the international number `+34 615 09 68 57`. WhatsApp links include a short prefilled message to reduce friction.

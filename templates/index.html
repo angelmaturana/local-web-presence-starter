@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Sitio web profesional preparado para posicionamiento local.">
+    <meta name="robots" content="index, follow">
+    <link rel="canonical" href="{{ canonical_url }}">
+    <link rel="stylesheet" href="{{ url_for('static', path='site.css') }}">
+    <title>Posicionamiento web local</title>
+</head>
+<body>
+    <header class="site-header">
+        <a class="brand" href="/" aria-label="Página de inicio">Tu marca</a>
+        <nav class="navigation" aria-label="Navegación principal">
+            <a href="#servicios">Servicios</a>
+            <a href="#contacto">Contacto</a>
+        </nav>
+    </header>
+
+    <main>
+        <section class="hero" aria-labelledby="hero-title">
+            <p class="eyebrow">Presencia digital clara</p>
+            <h1 id="hero-title">Una base sólida para tu página web.</h1>
+            <p class="hero-text">Publica contenido útil, presenta tu actividad y facilita que tus clientes te encuentren desde cualquier dispositivo.</p>
+            <a class="button" href="#contacto">Empezar</a>
+        </section>
+
+        <section class="section" id="servicios" aria-labelledby="services-title">
+            <div class="section-heading">
+                <p class="eyebrow">Lo esencial</p>
+                <h2 id="services-title">Una web preparada para crecer</h2>
+            </div>
+            <div class="service-grid">
+                <article class="service">
+                    <span class="service-number">01</span>
+                    <h3>Contenido organizado</h3>
+                    <p>Secciones claras para explicar qué haces y por qué tus clientes deberían elegirte.</p>
+                </article>
+                <article class="service">
+                    <span class="service-number">02</span>
+                    <h3>Experiencia rápida</h3>
+                    <p>Una estructura ligera y adaptable para navegar cómodamente desde móvil u ordenador.</p>
+                </article>
+                <article class="service">
+                    <span class="service-number">03</span>
+                    <h3>Lista para posicionar</h3>
+                    <p>Metadatos básicos, enlaces semánticos y una base preparada para añadir contenido real.</p>
+                </article>
+            </div>
+        </section>
+
+        <section class="contact" id="contacto" aria-labelledby="contact-title">
+            <div>
+                <p class="eyebrow">Siguiente paso</p>
+                <h2 id="contact-title">Convierte esta base en tu sitio.</h2>
+            </div>
+            <p>Actualiza los textos y añade nuevas plantillas según crezca el proyecto.</p>
+        </section>
+    </main>
+
+    <footer class="site-footer">
+        <span>Tu marca</span>
+        <span>Web clara · Contenido útil · Presencia local</span>
+    </footer>
+</body>
+</html>

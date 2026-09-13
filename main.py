@@ -7,7 +7,7 @@ import urllib.request
 from pathlib import Path
 
 from fastapi import FastAPI, Form, Request
-from fastapi.responses import PlainTextResponse, RedirectResponse, Response
+from fastapi.responses import PlainTextResponse, Response
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 
@@ -16,12 +16,12 @@ BASE_DIR = Path(__file__).resolve().parent
 TEMPLATES_DIR = BASE_DIR / "templates"
 STATIC_DIR = BASE_DIR / "static"
 
-app = FastAPI(title="Norte Digital | SEO local y desarrollo web en Valdemoro", version="1.0.0")
+app = FastAPI(title="SEO Valdemoro | SEO local y desarrollo web", version="1.0.0")
 app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
 templates = Jinja2Templates(directory=TEMPLATES_DIR)
 
 SITE_URL = os.environ.get("SITE_URL", "http://localhost:8000").rstrip("/")
-SITE_NAME = os.environ.get("SITE_NAME", "Norte Digital")
+SITE_NAME = os.environ.get("SITE_NAME", "SEO Valdemoro")
 
 SERVICES = {
     "desarrollo-web-valdemoro": {
@@ -143,7 +143,7 @@ async def home_page(request: Request):
     """Render the conversion-focused home page."""
     context = page_context(
         request,
-        "SEO local y desarrollo web en Valdemoro | Norte Digital",
+        "SEO local y desarrollo web en Valdemoro | SEO Valdemoro",
         "Diseño web, SEO local y posicionamiento en IA para comercios y PyMEs de Valdemoro.",
         page="home",
     )

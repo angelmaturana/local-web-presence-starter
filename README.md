@@ -79,4 +79,4 @@ The interval can be customized with `KEEPALIVE_INTERVAL` in seconds. It defaults
 
 Update the copy and metadata in `templates/index.html`, and adjust the visual design in `static/site.css` to match the business or brand.
 
-The default site identity and public URL can be configured with `SITE_NAME` and `SITE_URL`. Replace the placeholder NAP information in `templates/base.html` and connect the audit form to an email or CRM service before using it in production.
+The default site identity is `SEO Valdemoro`. It and the public URL can be configured with `SITE_NAME` and `SITE_URL`. Replace the placeholder NAP information in `templates/base.html` and connect the audit form to an email or CRM service before using it in production.

@@ -1,0 +1,6 @@
+{% extends "base.html" %}
+{% block content %}
+<section class="page-hero" aria-labelledby="page-title"><div><p class="eyebrow">{{ service.eyebrow }}</p><h1 id="page-title">{{ service.title }}</h1><p class="hero-text">{{ service.intro }}</p></div><span class="page-hero-index">Valdemoro<br>Madrid sur</span></section>
+<section class="service-detail section"><div class="detail-main"><p class="eyebrow">Qué resolvemos</p><h2>{{ service.description }}</h2></div><div class="detail-aside"><h2>El trabajo incluye</h2><ul>{% for point in service.points %}<li>{{ point }}</li>{% endfor %}</ul><a class="button" href="/auditoria-gratuita-valdemoro">Hablar de tu caso <span aria-hidden="true">↗</span></a></div></section>
+<section class="related section-band"><div class="section-narrow"><p class="eyebrow">Una pieza no basta</p><h2>Conecta este servicio con el resto de tu presencia local.</h2><div class="related-links">{% for slug, item in services.items() %}{% if slug != request.path_params.get('service_slug') %}<a href="/servicios/{{ slug }}">{{ item.short_title }} <span aria-hidden="true">↗</span></a>{% endif %}{% endfor %}</div></div></section>
+{% endblock %}

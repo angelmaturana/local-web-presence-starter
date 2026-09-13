@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="{{ page_description }}">
+    <meta name="robots" content="index, follow">
+    <link rel="canonical" href="{{ canonical_url }}">
+    <link rel="stylesheet" href="{{ url_for('static', path='site.css') }}">
+    <title>{{ page_title }}</title>
+    {% block head %}{% endblock %}
+</head>
+<body>
+    <a class="skip-link" href="#contenido">Saltar al contenido</a>
+    <header class="site-header">
+        <a class="brand" href="/" aria-label="{{ site_name }}, página de inicio"><span class="brand-mark">N</span><span>{{ site_name }}</span></a>
+        <nav class="navigation" aria-label="Navegación principal">{% for label, href in nav_items %}<a href="{{ href }}">{{ label }}</a>{% endfor %}</nav>
+        <a class="button button-small" href="/auditoria-gratuita-valdemoro">Pedir auditoría <span aria-hidden="true">↗</span></a>
+    </header>
+    <main id="contenido">{% block content %}{% endblock %}</main>
+    <footer class="site-footer">
+        <div class="footer-intro"><a class="brand" href="/" aria-label="Volver al inicio"><span class="brand-mark">N</span><span>{{ site_name }}</span></a><p>Web, mapas e IA para que los negocios de Valdemoro sean más fáciles de encontrar y elegir.</p></div>
+        <div class="footer-column"><h2>Servicios</h2>{% for slug, service in services.items() %}<a href="/servicios/{{ slug }}">{{ service.short_title }}</a>{% endfor %}</div>
+        <div class="footer-column"><h2>Valdemoro</h2><span>El Restón</span><span>Zona Centro</span><span>Albresa · Valmor</span><span>Rompecubas · El Prado</span></div>
+        <div class="footer-column"><h2>Contacto</h2><span>Datos NAP pendientes de configurar</span><a href="/sobre-nosotros">Conoce el enfoque</a><a href="/auditoria-gratuita-valdemoro">Solicitar auditoría</a></div>
+        <div class="footer-bottom"><span>© 2026 {{ site_name }}</span><span>Presencia local con criterio</span></div>
+    </footer>
+</body>
+</html>

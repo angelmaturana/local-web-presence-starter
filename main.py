@@ -1,9 +1,11 @@
 """FastAPI website for a local digital services studio in Valdemoro."""
 
 import os
+import smtplib
 import threading
 import time
 import urllib.request
+from email.message import EmailMessage
 from pathlib import Path
 
 from fastapi import FastAPI, Form, Request
@@ -22,6 +24,10 @@ templates = Jinja2Templates(directory=TEMPLATES_DIR)
 
 SITE_URL = os.environ.get("SITE_URL", "http://localhost:8000").rstrip("/")
 SITE_NAME = os.environ.get("SITE_NAME", "SEO Valdemoro")
+CONTACT_EMAIL = "angel.maturana@gmail.com"
+CONTACT_PHONE = "615 09 68 57"
+CONTACT_PHONE_E164 = "+34615096857"
+WHATSAPP_URL = "https://wa.me/34615096857?text=Hola%20SEO%20Valdemoro%2C%20quiero%20mejorar%20la%20presencia%20digital%20de%20mi%20negocio."
 
 SERVICES = {
     "desarrollo-web-valdemoro": {
@@ -94,8 +100,36 @@ def page_context(request: Request, title: str, description: str, **values: objec
         "page_description": description,
         "nav_items": NAV_ITEMS,
         "services": SERVICES,
+        "contact_email": CONTACT_EMAIL,
+        "contact_phone": CONTACT_PHONE,
+        "contact_phone_e164": CONTACT_PHONE_E164,
+        "whatsapp_url": WHATSAPP_URL,
         **values,
     }
+
+
+def send_audit_email(business_name: str, email: str, phone: str) -> bool:
+    """Send an audit notification when SMTP credentials are configured."""
+    smtp_host = os.environ.get("SMTP_HOST")
+    smtp_user = os.environ.get("SMTP_USER")
+    smtp_password = os.environ.get("SMTP_PASSWORD")
+    if not all((smtp_host, smtp_user, smtp_password)):
+        return False
+
+    message = EmailMessage()
+    message["Subject"] = f"Nueva solicitud de auditoría: {business_name}"
+    message["From"] = os.environ.get("SMTP_FROM", smtp_user)
+    message["To"] = CONTACT_EMAIL
+    message.set_content(
+        "Nueva solicitud de auditoría SEO Valdemoro\n\n"
+        f"Negocio: {business_name}\nEmail: {email}\nTeléfono/WhatsApp: {phone or 'No indicado'}\n"
+    )
+    port = int(os.environ.get("SMTP_PORT", "587"))
+    with smtplib.SMTP(smtp_host, port, timeout=15) as smtp:
+        smtp.starttls()
+        smtp.login(smtp_user, smtp_password)
+        smtp.send_message(message)
+    return True
 
 
 def keep_alive_ping() -> None:
@@ -200,16 +234,22 @@ async def audit_page(request: Request):
 
 
 @app.post("/auditoria-gratuita-valdemoro")
-async def submit_audit(
+def submit_audit(
     request: Request,
     business_name: str = Form(...),
     email: str = Form(...),
     phone: str = Form(""),
 ):
-    """Acknowledge the audit form without claiming delivery or persistence."""
+    """Send the audit request when configured and expose WhatsApp as fallback."""
     safe_business_name = business_name.strip()[:120]
     safe_email = email.strip()[:160]
     safe_phone = phone.strip()[:40]
+    email_sent = False
+    email_error = False
+    try:
+        email_sent = send_audit_email(safe_business_name, safe_email, safe_phone)
+    except (OSError, smtplib.SMTPException, ValueError):
+        email_error = True
     context = page_context(
         request,
         f"Solicitud recibida | {SITE_NAME}",
@@ -219,6 +259,8 @@ async def submit_audit(
         submitted_name=safe_business_name,
         submitted_email=safe_email,
         submitted_phone=safe_phone,
+        email_sent=email_sent,
+        email_error=email_error,
     )
     return templates.TemplateResponse(request=request, name="audit.html", context=context)
 
@@ -244,7 +286,7 @@ async def robots(request: Request):
 async def sitemap(request: Request):
     paths = ["/", "/casos-exito-valdemoro", "/sobre-nosotros", "/auditoria-gratuita-valdemoro", "/blog"]
     paths.extend(f"/servicios/{slug}" for slug in SERVICES)
-    urls = "".join(f"<url><loc>{SITE_URL}{path}</loc></url>" for path in paths)
+    urls = "".join(f"<url><loc>{SITE_URL}{path}</loc><changefreq>monthly</changefreq></url>" for path in paths)
     content = f'<?xml version="1.0" encoding="UTF-8"?><urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">{urls}</urlset>'
     return Response(content, media_type="application/xml")
 

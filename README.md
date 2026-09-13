@@ -11,6 +11,8 @@ A FastAPI website for a local digital services studio serving businesses in Vald
 - Keep-alive endpoint at `/keepalive`
 - Audit request form at `/auditoria-gratuita-valdemoro`
 - `robots.txt` and `sitemap.xml` endpoints
+- Phone and WhatsApp contact paths
+- SMTP-backed audit notifications
 - Optional Render keep-alive support
 
 ## Requirements
@@ -80,3 +82,19 @@ The interval can be customized with `KEEPALIVE_INTERVAL` in seconds. It defaults
 Update the copy and metadata in `templates/index.html`, and adjust the visual design in `static/site.css` to match the business or brand.
 
 The default site identity is `SEO Valdemoro`. It and the public URL can be configured with `SITE_NAME` and `SITE_URL`. Replace the placeholder NAP information in `templates/base.html` and connect the audit form to an email or CRM service before using it in production.
+
+## Contact and email delivery
+
+The public contact phone is `615 09 68 57`, and WhatsApp uses the international number `+34 615 09 68 57`. Audit requests are delivered to `angel.maturana@gmail.com` when SMTP is configured. WhatsApp links include a short prefilled message to reduce friction.
+
+Set these Render environment variables for email delivery:
+
+```env
+SMTP_HOST=smtp.gmail.com
+SMTP_PORT=587
+SMTP_USER=your-sending-gmail-address@gmail.com
+SMTP_PASSWORD=your-gmail-app-password
+SMTP_FROM=your-sending-gmail-address@gmail.com
+```
+
+For Gmail, use an App Password on an account with two-step verification enabled. Do not commit the password. If SMTP is not configured or fails, the form clearly directs the visitor to WhatsApp instead of reporting a false success.

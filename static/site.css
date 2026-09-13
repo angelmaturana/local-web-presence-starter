@@ -31,6 +31,9 @@ a:focus-visible, button:focus-visible, input:focus-visible, summary:focus-visibl
 .navigation { display: flex; flex: 1; justify-content: center; gap: 25px; font: .7rem var(--sans); letter-spacing: .08em; text-transform: uppercase; }
 .navigation a { padding: 8px 0; text-decoration: none; }
 .navigation a:hover, .navigation a:focus-visible, .navigation a.is-active { color: var(--coral); }
+.header-actions { display: flex; align-items: center; gap: 16px; }
+.contact-phone { color: var(--green); font: 700 .76rem var(--sans); text-decoration: none; white-space: nowrap; }
+.contact-phone:hover, .contact-phone:focus-visible { color: var(--coral); }
 .button { display: inline-flex; align-items: center; justify-content: center; gap: 12px; border: 2px solid var(--green); padding: 15px 21px; background: var(--green); color: var(--white); font: 700 .72rem var(--sans); letter-spacing: .1em; text-decoration: none; text-transform: uppercase; cursor: pointer; }
 .button:hover, .button:focus-visible { background: var(--coral); border-color: var(--coral); }
 .button-small { padding: 11px 14px; font-size: .64rem; }
@@ -84,6 +87,8 @@ details p { max-width: 650px; margin: 0 0 24px; color: var(--muted); line-height
 .cta-band { display: flex; align-items: end; justify-content: space-between; gap: 40px; padding: 74px max(32px, calc((100vw - 1176px) / 2)); background: var(--coral); }
 .cta-band h2 { max-width: 720px; margin: 0; color: var(--white); }
 .cta-band .eyebrow { color: var(--green-dark); }
+.cta-contact { margin: 22px 0 0; color: var(--green-dark); font: .85rem var(--sans); }
+.cta-contact a { color: var(--white); font-weight: 700; }
 
 .page-hero { align-items: end; grid-template-columns: minmax(0, 1fr) 230px; }
 .page-hero h1 { max-width: 900px; margin-bottom: 0; }
@@ -119,6 +124,8 @@ form .button { justify-self: start; margin-top: 22px; }
 small { line-height: 1.45; }
 .form-success h2 { margin-top: 25px; }
 .form-success p:not(.eyebrow) { color: var(--muted); line-height: 1.55; }
+.direct-contact { display: grid; gap: 10px; margin-top: 40px; padding-top: 20px; border-top: 1px solid var(--line); color: var(--green); font: .82rem var(--sans); }
+.direct-contact a { color: var(--coral); font-weight: 700; text-decoration: none; }
 .article-list { display: grid; grid-template-columns: 1.3fr .7fr; gap: 70px; }
 .article-feature { padding: 25px 0 45px; border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); }
 .article-tag { color: var(--coral); }
@@ -141,6 +148,8 @@ small { line-height: 1.45; }
     .site-header { flex-wrap: wrap; padding: 20px; }
     .navigation { order: 3; flex-basis: 100%; justify-content: flex-start; gap: 18px; overflow-x: auto; }
     .button-small { margin-left: auto; }
+    .header-actions { margin-left: auto; }
+    .header-actions .contact-phone { display: none; }
     .hero, .page-hero { display: block; padding: 72px 20px 85px; }
     .hero-home { min-height: auto; }
     h1 { font-size: clamp(3.3rem, 15vw, 6rem); }

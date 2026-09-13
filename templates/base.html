@@ -15,10 +15,14 @@
     <meta name="author" content="{{ site_name }}">
     <meta name="theme-color" content="#204d3d">
     <meta name="twitter:card" content="summary">
+    <meta name="twitter:title" content="{{ page_title }}">
+    <meta name="twitter:description" content="{{ page_description }}">
     <link rel="stylesheet" href="{{ url_for('static', path='site.css') }}">
     <link rel="icon" href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAxMjggMTI4Ij48cmVjdCB3aWR0aD0iMTI4IiBoZWlnaHQ9IjEyOCIgZmlsbD0iIzIwNGQzZCIvPjxwYXRoIGQ9Ik05NiAzOWMtOC03LTE4LTEwLTI5LTEwLTEwIDAtMTcgMy0xNyA5IDAgNyA4IDkgMjQgMTMgMjQgNiAzNSAxNCAzNSAzMSAwIDE5LTE1IDMwLTM5IDMwLTE4IDAtMzMtNS00NC0xNWwxMS0xN2MxMCA4IDIxIDEyIDM0IDEyIDExIDAgMTgtMyAxOC0xMCAwLTYtNi05LTIzLTEzLTI1LTYtMzYtMTQtMzYtMzEgMC0xOSAxNS0zMCAzOC0zMCAxNyAwIDMxIDQgNDEgMTJMOTYgMzlaIiBmaWxsPSIjZmZmZGY4Ii8+PGNpcmNsZSBjeD0iMTAxIiBjeT0iMjciIHI9IjEyIiBmaWxsPSIjZDllZDY1Ii8+PC9zdmc+" type="image/svg+xml">
     <title>{{ page_title }}</title>
     <script type="application/ld+json">{{ {"@context": "https://schema.org", "@type": "WebPage", "@id": canonical_url ~ "#webpage", "url": canonical_url, "name": page_title, "description": page_description, "isPartOf": {"@id": site_url ~ "/#website"}, "inLanguage": "es-ES"} | tojson }}</script>
+    <script type="application/ld+json">{{ {"@context": "https://schema.org", "@type": "WebSite", "@id": site_url ~ "/#website", "url": site_url, "name": site_name, "inLanguage": "es-ES", "publisher": {"@id": site_url ~ "/#agency"}} | tojson }}</script>
+    <script type="application/ld+json">{{ {"@context": "https://schema.org", "@type": "BreadcrumbList", "itemListElement": breadcrumb_schema} | tojson }}</script>
     {% block head %}{% endblock %}
 </head>
 <body>

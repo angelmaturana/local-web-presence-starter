@@ -114,10 +114,22 @@ PUBLIC_PATHS = (
     "/blog",
     *[f"/servicios/{slug}" for slug in SERVICES],
 )
+SITE_UPDATED = "2026-09-13"
 
 
-def page_context(request: Request, title: str, description: str, **values: object) -> dict[str, object]:
+def page_context(
+    request: Request,
+    title: str,
+    description: str,
+    breadcrumbs: list[dict[str, str]] | None = None,
+    **values: object,
+) -> dict[str, object]:
     """Return the shared template context for a public page."""
+    page_breadcrumbs = breadcrumbs or [{"name": settings.site_name, "url": f"{settings.site_url}/"}]
+    breadcrumb_schema = [
+        {"@type": "ListItem", "position": position, "name": crumb["name"], "item": crumb["url"]}
+        for position, crumb in enumerate(page_breadcrumbs, start=1)
+    ]
     return {
         "request": request,
         "site_name": settings.site_name,
@@ -130,6 +142,8 @@ def page_context(request: Request, title: str, description: str, **values: objec
         "contact_phone": settings.phone,
         "contact_phone_e164": settings.phone_e164,
         "whatsapp_url": settings.whatsapp_url,
+        "breadcrumbs": page_breadcrumbs,
+        "breadcrumb_schema": breadcrumb_schema,
         **values,
     }
 
@@ -201,23 +215,34 @@ async def service_page(request: Request, service_slug: str):
     return templates.TemplateResponse(
         request=request,
         name="service.html",
-        context=page_context(request, f"{service['title']} | {settings.site_name}", service["description"], page="service", service=service),
+        context=page_context(
+            request,
+            f"{service['title']} | {settings.site_name}",
+            service["description"],
+            page="service",
+            service=service,
+            breadcrumbs=[
+                {"name": settings.site_name, "url": f"{settings.site_url}/"},
+                {"name": "Servicios", "url": f"{settings.site_url}/#servicios"},
+                {"name": service["short_title"], "url": f"{settings.site_url}/servicios/{service_slug}"},
+            ],
+        ),
     )
 
 
 @app.get("/casos-exito-valdemoro", name="cases")
 async def cases_page(request: Request):
-    return templates.TemplateResponse(request=request, name="cases.html", context=page_context(request, f"Casos de éxito SEO local en Valdemoro | {settings.site_name}", "Cómo medimos visibilidad local, contactos y oportunidades de mejora.", page="cases"))
+    return templates.TemplateResponse(request=request, name="cases.html", context=page_context(request, f"Casos de éxito SEO local en Valdemoro | {settings.site_name}", "Cómo medimos visibilidad local, contactos y oportunidades de mejora.", page="cases", breadcrumbs=[{"name": settings.site_name, "url": f"{settings.site_url}/"}, {"name": "Casos de éxito", "url": f"{settings.site_url}/casos-exito-valdemoro"}]))
 
 
 @app.get("/sobre-nosotros", name="about")
 async def about_page(request: Request):
-    return templates.TemplateResponse(request=request, name="about.html", context=page_context(request, f"Sobre {settings.site_name} | Estrategia digital en Valdemoro", "Conoce el enfoque de SEO Valdemoro para construir presencia digital local.", page="about"))
+    return templates.TemplateResponse(request=request, name="about.html", context=page_context(request, f"Sobre {settings.site_name} | Estrategia digital en Valdemoro", "Conoce el enfoque de SEO Valdemoro para construir presencia digital local.", page="about", breadcrumbs=[{"name": settings.site_name, "url": f"{settings.site_url}/"}, {"name": "Sobre nosotros", "url": f"{settings.site_url}/sobre-nosotros"}]))
 
 
 @app.get("/blog", name="blog")
 async def blog_page(request: Request):
-    return templates.TemplateResponse(request=request, name="blog.html", context=page_context(request, f"Blog de SEO local y GEO en Valdemoro | {settings.site_name}", "Guías prácticas para mejorar la presencia digital de negocios locales.", page="blog"))
+    return templates.TemplateResponse(request=request, name="blog.html", context=page_context(request, f"Blog de SEO local y GEO en Valdemoro | {settings.site_name}", "Guías prácticas para mejorar la presencia digital de negocios locales.", page="blog", breadcrumbs=[{"name": settings.site_name, "url": f"{settings.site_url}/"}, {"name": "Blog", "url": f"{settings.site_url}/blog"}]))
 
 
 @app.get("/health", response_model=dict[str, str], name="health")
@@ -233,7 +258,7 @@ async def robots() -> str:
 @app.get("/sitemap.xml", name="sitemap")
 async def sitemap() -> Response:
     urls = "".join(
-        f"<url><loc>{escape(settings.site_url + path)}</loc><changefreq>monthly</changefreq></url>"
+        f"<url><loc>{escape(settings.site_url + path)}</loc><lastmod>{SITE_UPDATED}</lastmod><changefreq>monthly</changefreq></url>"
         for path in PUBLIC_PATHS
     )
     content = f'<?xml version="1.0" encoding="UTF-8"?><urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">{urls}</urlset>'

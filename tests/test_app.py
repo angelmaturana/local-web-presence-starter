@@ -33,8 +33,12 @@ def test_contact_and_seo_endpoints():
     assert settings.whatsapp_url in home
     assert 'type="application/ld+json"' in home
     assert "FAQPage" in home
+    assert "ProfessionalService" in home
+    assert "BreadcrumbList" in home
     assert client.get("/robots.txt").text.endswith("/sitemap.xml\n")
-    assert client.get("/sitemap.xml").text.count("<url>") == len(PUBLIC_PATHS)
+    sitemap = client.get("/sitemap.xml").text
+    assert sitemap.count("<url>") == len(PUBLIC_PATHS)
+    assert sitemap.count("<lastmod>2026-09-13</lastmod>") == len(PUBLIC_PATHS)
 
 
 def test_health_and_keepalive():
